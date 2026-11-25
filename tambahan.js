@@ -153,3 +153,30 @@ loadSubs();
 sb2.channel("subs-live").on("postgres_changes",{event:"*",schema:"public",table:"submissions"},loadSubs).subscribe();
 }catch(err){console.error("tambahan.js",err)}
 })();
+/* Progres hanya di halaman awal, dan klik tim menggulir ke seksinya. */
+(function(){
+try{
+const homeSel=["#sum","#bar","#teams"];
+function showHome(show){
+  homeSel.forEach(s=>{const e=$(s);if(e)e.hidden=!show});
+  const t=$("#teams"); const h=t&&t.previousElementSibling; if(h)h.hidden=!show;
+}
+const sv=window.setView;
+window.setView=function(v){sv(v);showHome(v==="daftar"||!v)};
+const rd=window.render;
+window.render=function(){
+  rd();
+  const ids=(filter!=="semua")?[filter]:DIVS.map(d=>d.id);
+  [...document.querySelectorAll("#list section.div")].forEach((s,i)=>{if(ids[i])s.id="div-"+ids[i]});
+  [...document.querySelectorAll("#teams .team")].forEach((b,i)=>{
+    const nb=b.cloneNode(true); b.replaceWith(nb);
+    nb.addEventListener("click",()=>{
+      filter="semua"; setView("daftar"); window.render();
+      const target=document.getElementById("div-"+DIVS[i].id);
+      if(target)target.scrollIntoView({behavior:"smooth",block:"start"});
+    });
+  });
+};
+window.render();
+}catch(err){console.error("tambahan.js bagian 2",err)}
+})();
