@@ -180,3 +180,20 @@ window.render=function(){
 window.render();
 }catch(err){console.error("tambahan.js bagian 2",err)}
 })();
+/* Hitung mundur besar */
+(function(){try{
+var css=document.createElement('style');
+css.textContent='.cd{margin:22px 0 10px;padding:22px 0 20px;border-top:3px solid var(--red,#b3261e);border-bottom:1px solid var(--rule,#ddd)}.cd .k{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--red,#b3261e);font-weight:700;margin:0 0 10px}.cd .big{display:flex;align-items:flex-end;gap:clamp(14px,4vw,36px);flex-wrap:wrap}.cd .u{display:flex;flex-direction:column}.cd .n{font-family:"EB Garamond",serif;font-weight:500;line-height:.9;font-variant-numeric:tabular-nums;font-size:clamp(34px,8vw,64px);color:var(--fg)}.cd .u.d .n{font-size:clamp(88px,26vw,170px);color:var(--red,#b3261e);font-weight:600}.cd .l{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-top:8px}.cd .urg{font-style:italic;color:var(--red,#b3261e);font-size:clamp(17px,3.8vw,24px);margin:18px 0 4px}.cd .sb{color:var(--muted);font-size:14px;margin:0}';
+document.head.appendChild(css);
+var box=document.createElement('div');box.className='cd';
+box.innerHTML='<p class="k">Menuju pembukaan</p><div class="big"><div class="u d"><span class="n" id="cd-d">0</span><span class="l">Hari</span></div><div class="u"><span class="n" id="cd-j">00</span><span class="l">Jam</span></div><div class="u"><span class="n" id="cd-m">00</span><span class="l">Menit</span></div><div class="u"><span class="n" id="cd-s">00</span><span class="l">Detik</span></div></div><p class="urg" id="cd-u"></p><p class="sb" id="cd-b"></p>';
+var note=document.querySelector('.note');
+if(note&&note.parentNode){note.parentNode.insertBefore(box,note);note.style.display='none';}else{document.body.insertBefore(box,document.body.firstChild);}
+function p2(n){return (n<10?'0':'')+n}
+function tick(){var ms=Math.max(0,OPEN-new Date());var d=Math.floor(ms/864e5),j=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4),s=Math.floor(ms%6e4/1e3);
+document.getElementById('cd-d').textContent=d;document.getElementById('cd-j').textContent=p2(j);document.getElementById('cd-m').textContent=p2(m);document.getElementById('cd-s').textContent=p2(s);
+var t=(typeof tasks!=='undefined'&&tasks)?tasks:[];var sisa=t.filter(function(x){return x.status!=='selesai'}).length;var now=new Date();var iso=now.getFullYear()+'-'+p2(now.getMonth()+1)+'-'+p2(now.getDate());var tel=t.filter(function(x){return x.status!=='selesai'&&x.due&&x.due<iso}).length;
+document.getElementById('cd-u').textContent=t.length?('Tinggal '+d+' hari. Masih '+sisa+' dari '+t.length+' tugas belum selesai.'):('Tinggal '+d+' hari.');
+document.getElementById('cd-b').textContent=(tel?tel+' tugas sudah lewat tenggat. ':'')+'Pembukaan: Kamis, 7 Januari 2027.';}
+tick();setInterval(tick,1000);
+}catch(e){console.error('countdown',e)}})();
