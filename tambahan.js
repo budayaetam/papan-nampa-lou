@@ -320,3 +320,54 @@ window.renderTimeline=function(){var box=$('#timeline');if(!box)return;
 window.renderTimeline();
 }catch(e){console.error('bagian6 grid',e)}
 })();
+/* Bagian 7: papan pameran (whiteboard) */
+(function(){try{
+var sb=window.supabase.createClient(SB_URL,SB_KEY);var BK='proposal';var items=[];var busy=false;
+var css=document.createElement('style');
+css.textContent='#wb{margin-bottom:28px}#wb .tb{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;margin:0 0 12px}#wb .tb p{flex:1 1 100%;text-align:center;font-size:14px;color:var(--muted);margin:0 0 4px}#wb .tb button,#wb .tb label{font:500 12px var(--body);letter-spacing:.14em;text-transform:uppercase;padding:7px 16px;border:1px solid var(--fg);background:transparent;color:var(--fg);cursor:pointer}#wb .tb button:hover,#wb .tb label:hover{background:var(--fg);color:var(--bg)}#wb .tb input[type=file]{display:none}#wb .st2{width:100%;text-align:center;font-size:13px;color:var(--muted);min-height:18px}.wbv{overflow:auto;height:72vh;min-height:420px;border:1px solid var(--rule);background:var(--bg)}.wbc{position:relative;width:3200px;height:2200px;background-image:radial-gradient(var(--rule) 1px,transparent 1px);background-size:24px 24px}.wbi{position:absolute;border:1px solid var(--rule);background:var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.12)}.wbi .hd{height:20px;cursor:move;background:var(--line);display:flex;justify-content:flex-end;align-items:center;touch-action:none}.wbi .hd b{margin-right:auto;padding-left:8px;font:700 11px var(--body);letter-spacing:.1em;color:var(--muted)}.wbi .hd button{border:0;background:none;color:var(--fg);cursor:pointer;font-size:15px;line-height:1;padding:0 8px}.wbi .hd button.arm{font-size:11px;font-weight:700;color:var(--late,#b3261e)}.wbi img{display:block;width:100%;height:auto;pointer-events:none;user-select:none}.wbi .nt{padding:10px;min-height:90px;background:#f3e7c9;color:#2B2B2B;font-size:14px;outline:none;white-space:pre-wrap;overflow-wrap:anywhere}.wbi .rz{position:absolute;right:0;bottom:0;width:16px;height:16px;cursor:nwse-resize;touch-action:none;background:linear-gradient(135deg,transparent 50%,var(--fg) 50%);opacity:.5}';
+document.head.appendChild(css);
+var panel=document.createElement('div');panel.id='wb';panel.hidden=true;
+panel.innerHTML='<div class="tb"><p>Tempel gambar dengan Ctrl+V (Cmd+V di Mac), seret berkas ke papan, atau pilih dari perangkat. Geser lewat bilah abu-abu di atas gambar, ubah ukuran lewat sudut kanan bawah.</p><label>Pilih gambar<input type="file" id="wb-f" accept="image/*" multiple></label><button type="button" id="wb-n">Tambah catatan</button><div class="st2" id="wb-s" role="status"></div></div><div class="wbv" id="wb-v"><div class="wbc" id="wb-c"></div></div>';
+var anchor=document.getElementById('peta')||document.getElementById('proposal');anchor.parentNode.insertBefore(panel,anchor.nextSibling);
+var cv=panel.querySelector('#wb-c'),vw=panel.querySelector('#wb-v'),stt=panel.querySelector('#wb-s');
+function say(t){stt.textContent=t||''}
+function who(){try{return localStorage.getItem('pf-by')||''}catch(e){return ''}}
+function nextZ(){var m=0;items.forEach(function(o){if(o.z>m)m=o.z});return m+1}
+function load(){if(busy)return;sb.from('wb_items').select('*').order('created_at').then(function(r){if(busy||r.error||!r.data)return;items=r.data;draw()})}
+function draw(){cv.replaceChildren();items.forEach(mk)}
+function drag(h,d,it,mode){h.addEventListener('pointerdown',function(e){if(e.button>0)return;e.preventDefault();busy=true;var sx=e.clientX,sy=e.clientY,ox=it.x,oy=it.y,ow=it.w;it.z=nextZ();d.style.zIndex=String(it.z);try{h.setPointerCapture(e.pointerId)}catch(x){}
+ function mv(ev){var dx=ev.clientX-sx,dy=ev.clientY-sy;if(mode==='move'){it.x=Math.max(0,Math.round(ox+dx));it.y=Math.max(0,Math.round(oy+dy));d.style.left=it.x+'px';d.style.top=it.y+'px'}else{it.w=Math.max(100,Math.round(ow+dx));d.style.width=it.w+'px'}}
+ function up(){h.removeEventListener('pointermove',mv);h.removeEventListener('pointerup',up);h.removeEventListener('pointercancel',up);busy=false;sb.from('wb_items').update({x:it.x,y:it.y,w:it.w,z:it.z}).eq('id',it.id).then(function(r){if(r.error)say('Gagal menyimpan posisi.')})}
+ h.addEventListener('pointermove',mv);h.addEventListener('pointerup',up);h.addEventListener('pointercancel',up)})}
+function mk(it){
+ var d=document.createElement('div');d.className='wbi';d.style.left=it.x+'px';d.style.top=it.y+'px';d.style.width=it.w+'px';d.style.zIndex=String(it.z);
+ var hd=document.createElement('div');hd.className='hd';var lb=document.createElement('b');lb.textContent=it.by||'';hd.appendChild(lb);
+ var x=document.createElement('button');x.type='button';x.textContent='×';x.title='Hapus';hd.appendChild(x);d.appendChild(hd);
+ var body;
+ if(it.kind==='note'){body=document.createElement('div');body.className='nt';body.contentEditable='true';body.textContent=it.body;body.addEventListener('focus',function(){busy=true});body.addEventListener('blur',function(){busy=false;var v=body.textContent;if(v!==it.body){it.body=v;sb.from('wb_items').update({body:v}).eq('id',it.id).then(function(){})}})}
+ else{body=document.createElement('img');body.src=it.url;body.alt='Gambar pameran';body.draggable=false}
+ d.appendChild(body);
+ var rz=document.createElement('div');rz.className='rz';d.appendChild(rz);
+ x.addEventListener('pointerdown',function(e){e.stopPropagation()});
+ x.addEventListener('click',function(){if(x.getAttribute('data-a')!=='1'){x.setAttribute('data-a','1');x.classList.add('arm');x.textContent='Hapus?';setTimeout(function(){x.removeAttribute('data-a');x.classList.remove('arm');x.textContent='×'},3000);return}
+  sb.from('wb_items').delete().eq('id',it.id).then(function(r){if(r.error){say('Gagal menghapus.');return}if(it.path)sb.storage.from(BK).remove([it.path]);items=items.filter(function(o){return o.id!==it.id});draw();say('Dihapus.')})});
+ drag(hd,d,it,'move');drag(rz,d,it,'size');
+ cv.appendChild(d)}
+function addRow(o){var n=items.length%8;o.x=vw.scrollLeft+40+n*28;o.y=vw.scrollTop+40+n*28;o.z=nextZ();o.by=who();return sb.from('wb_items').insert(o).select().then(function(r){if(r.error||!r.data){say('Gagal menyimpan ke papan.');return}items.push(r.data[0]);draw();say('Ditambahkan ke papan.')})}
+function prep(file){return new Promise(function(ok,no){var u=URL.createObjectURL(file);var im=new Image();im.onload=function(){var s=Math.min(1,1600/Math.max(im.width,im.height));if(s===1&&file.size<900000&&['image/png','image/jpeg','image/webp','image/gif'].indexOf(file.type)>-1){URL.revokeObjectURL(u);ok({blob:file,ext:file.type.split('/')[1].replace('jpeg','jpg'),w:im.width});return}var c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);var g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(function(b){b?ok({blob:b,ext:'jpg',w:c.width}):no(new Error('gagal diproses'))},'image/jpeg',0.86)};im.onerror=function(){no(new Error('bukan gambar'))};im.src=u})}
+function up1(file){say('Mengunggah gambar...');return prep(file).then(function(p){var path='wb/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+p.ext;return sb.storage.from(BK).upload(path,p.blob,{contentType:p.blob.type||'image/jpeg'}).then(function(r){if(r.error)throw r.error;var url=sb.storage.from(BK).getPublicUrl(path).data.publicUrl;return addRow({kind:'img',url:url,path:path,w:Math.min(360,p.w)})})}).catch(function(e){say('Gagal mengunggah: '+((e&&e.message)||'coba lagi'))})}
+function many(files){var a=[].filter.call(files,function(f){return f.type.indexOf('image/')===0});if(!a.length){say('Berkas itu bukan gambar.');return}a.reduce(function(pr,f){return pr.then(function(){return up1(f)})},Promise.resolve())}
+panel.querySelector('#wb-f').addEventListener('change',function(e){many(e.target.files);e.target.value=''});
+panel.querySelector('#wb-n').addEventListener('click',function(){addRow({kind:'note',body:'Tulis catatan di sini',w:220})});
+document.addEventListener('paste',function(e){if(panel.hidden)return;var t=e.target;if(t&&(t.isContentEditable||/INPUT|TEXTAREA/.test(t.tagName)))return;var fs=e.clipboardData&&e.clipboardData.files;if(fs&&fs.length){e.preventDefault();many(fs)}});
+vw.addEventListener('dragover',function(e){e.preventDefault()});
+vw.addEventListener('drop',function(e){e.preventDefault();if(e.dataTransfer&&e.dataTransfer.files.length)many(e.dataTransfer.files)});
+sb.channel('wb-live').on('postgres_changes',{event:'*',schema:'public',table:'wb_items'},function(){load()}).subscribe();
+setInterval(function(){if(!panel.hidden)load()},20000);
+var tp=document.getElementById('tab-peta')||document.getElementById('tab-proposal');
+var btn=document.createElement('button');btn.type='button';btn.id='tab-wb';btn.className=tp.className;btn.textContent='Papan pameran';btn.setAttribute('aria-pressed','false');tp.insertAdjacentElement('afterend',btn);
+var all=['tab-daftar','tab-timeline','tab-proposal','tab-peta'];
+btn.addEventListener('click',function(){window.setView('timeline');['timeline','proposal','peta'].forEach(function(i){var e=document.getElementById(i);if(e)e.hidden=true});panel.hidden=false;all.forEach(function(i){var e=document.getElementById(i);if(e)e.setAttribute('aria-pressed','false')});btn.setAttribute('aria-pressed','true');load()});
+all.forEach(function(i){var e=document.getElementById(i);if(e)e.addEventListener('click',function(){panel.hidden=true;btn.setAttribute('aria-pressed','false')})});
+}catch(e){console.error('bagian7 papan pameran',e)}
+})();
