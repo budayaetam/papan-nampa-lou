@@ -371,3 +371,39 @@ btn.addEventListener('click',function(){window.setView('timeline');['timeline','
 all.forEach(function(i){var e=document.getElementById(i);if(e)e.addEventListener('click',function(){panel.hidden=true;btn.setAttribute('aria-pressed','false')})});
 }catch(e){console.error('bagian7 papan pameran',e)}
 })();
+/* Bagian 8: baca PDF seperti buku */
+(function(){try{
+var css=document.createElement('style');
+css.textContent='.pr .pvb{width:auto;justify-self:start;align-self:flex-start;display:inline-block}.bk{position:fixed;inset:0;z-index:9999;background:rgba(20,18,16,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 16px 16px}.bk .bt{position:absolute;top:10px;right:14px;display:flex;gap:8px}.bk .bt button{font:500 12px var(--body);letter-spacing:.14em;text-transform:uppercase;padding:7px 14px;border:1px solid #ddd;background:transparent;color:#eee;cursor:pointer}.bk .bt button:hover{background:#eee;color:#222}.bk .st{color:#ddd;font-size:13px;margin-top:12px;min-height:18px;text-align:center}.bk .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;width:100%}.bk .pg{background:#fff}.bk .pg img{width:100%;height:100%;display:block;object-fit:contain}';
+document.head.appendChild(css);
+function ld(src){return new Promise(function(ok,no){var s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=function(){no(new Error('gagal memuat pustaka'))};document.head.appendChild(s)})}
+var libs=null;
+function need(){if(libs)return libs;libs=ld('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js').then(function(){return ld('https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js')}).then(function(){return fetch('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js').then(function(r){return r.text()})}).then(function(t){pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(new Blob([t],{type:'text/javascript'}))});libs.catch(function(){libs=null});return libs}
+function openBook(url){
+ var ov=document.createElement('div');ov.className='bk';
+ ov.innerHTML='<div class="bt"><button type="button" data-a="p">Sebelumnya</button><button type="button" data-a="n">Berikutnya</button><button type="button" data-a="x">Tutup</button></div><div class="stage"><div id="bk-s"></div></div><div class="st"></div>';
+ document.body.appendChild(ov);var st=ov.querySelector('.st');var pf=null;
+ function close(){document.removeEventListener('keydown',kd);ov.remove();if(pf){try{pf.destroy()}catch(e){}}}
+ function kd(e){if(e.key==='Escape')close();if(pf&&e.key==='ArrowRight')pf.flipNext();if(pf&&e.key==='ArrowLeft')pf.flipPrev()}
+ document.addEventListener('keydown',kd);
+ ov.querySelector('.bt').addEventListener('click',function(e){var a=e.target.getAttribute&&e.target.getAttribute('data-a');if(a==='x')close();if(a==='n'&&pf)pf.flipNext();if(a==='p'&&pf)pf.flipPrev()});
+ st.textContent='Menyiapkan buku...';
+ need().then(function(){return pdfjsLib.getDocument(url).promise}).then(function(pdf){
+  var n=pdf.numPages;var imgs=[];var ratio=1.4;
+  function pg(i){if(!ov.isConnected)return Promise.reject(new Error('ditutup'));return pdf.getPage(i).then(function(p){var v0=p.getViewport({scale:1});if(i===1)ratio=v0.height/v0.width;var v=p.getViewport({scale:900/v0.width});var c=document.createElement('canvas');c.width=Math.round(v.width);c.height=Math.round(v.height);return p.render({canvasContext:c.getContext('2d'),viewport:v}).promise.then(function(){imgs.push(c.toDataURL('image/jpeg',0.8));st.textContent='Memuat halaman '+i+' dari '+n})})}
+  var pr=Promise.resolve();for(var i=1;i<=n;i++){(function(k){pr=pr.then(function(){return pg(k)})})(i)}
+  return pr.then(function(){
+   var mob=innerWidth<800;var maxH=innerHeight-130;var maxW=innerWidth-32;var w=Math.floor(Math.min(700,mob?maxW:maxW/2,maxH/ratio));var h=Math.round(w*ratio);
+   var host=ov.querySelector('#bk-s');host.style.width=(mob?w:w*2)+'px';host.style.height=h+'px';
+   var pages=imgs.map(function(u){var d=document.createElement('div');d.className='pg';var im=document.createElement('img');im.src=u;im.alt='Halaman';d.appendChild(im);return d});
+   pf=new St.PageFlip(host,{width:w,height:h,size:'stretch',minWidth:150,maxWidth:w,minHeight:200,maxHeight:h,showCover:true,usePortrait:mob,drawShadow:true,maxShadowOpacity:0.4,mobileScrollSupport:false});
+   pf.loadFromHTML(pages);
+   st.textContent='Halaman 1 dari '+n+'. Klik sudut halaman atau pakai tombol panah untuk membalik.';
+   pf.on('flip',function(e){st.textContent='Halaman '+(e.data+1)+' dari '+n+'.'});
+  })
+ }).catch(function(e){if(ov.isConnected)st.textContent='Gagal membuka buku: '+((e&&e.message)||'coba lagi')});
+}
+function addBtns(){var pl=document.getElementById('pl');if(!pl)return;pl.querySelectorAll('.pr').forEach(function(pr){if(pr.getAttribute('data-bk'))return;pr.setAttribute('data-bk','1');var a=pr.querySelector('a');if(!a)return;if(a.href.split('?')[0].toLowerCase().slice(-4)!=='.pdf')return;var b=document.createElement('button');b.type='button';b.className='pvb';b.textContent='Baca seperti buku';var an=pr.querySelector('.pvb')||a;an.insertAdjacentElement('afterend',b);b.addEventListener('click',function(){openBook(a.href)})})}
+var pp=document.getElementById('proposal');if(pp){new MutationObserver(addBtns).observe(pp,{childList:true,subtree:true});addBtns()}
+}catch(e){console.error('bagian8 buku',e)}
+})();
