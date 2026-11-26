@@ -236,3 +236,47 @@ var pvAll=function(){var pl=document.getElementById('pl');if(!pl)return;pl.query
 var pp=document.getElementById('proposal');if(pp){new MutationObserver(pvAll).observe(pp,{childList:true,subtree:true});pvAll()}
 }catch(e){console.error('bagian4 proposal',e)}
 })();
+/* Bagian 5: tugas selesai turun ke bawah, peta hubungan antar tim */
+(function(){try{
+var st=document.createElement('style');
+st.textContent='.row.s-selesai .ti{text-decoration:line-through;color:var(--muted)}.row.s-selesai{opacity:.75}';
+document.head.appendChild(st);
+var r0=window.render;
+window.render=function(){var o=r0.apply(this,arguments);try{document.querySelectorAll('#list section.div').forEach(function(sec){var add=sec.querySelector('.add');if(!add)return;sec.querySelectorAll('.row.s-selesai').forEach(function(r){sec.insertBefore(r,add)})})}catch(e){console.error('sink',e)}return o};
+window.render();
+}catch(e){console.error('bagian5 sink',e)}
+try{
+var N={inti:'Inti',kurasi:'Kurasi',pdd:'PDD',desain:'Desain',humas:'Humas',perkap:'Perkap',keamanan:'Keamanan',registrasi:'Registrasi',talkshow:'Talkshow',workshop:'Workshop'};
+var L=[['humas','pdd','Publikasi media sosial, teaser comingsoon, dan testimoni pameran'],['humas','desain','Poster, undangan, dan materi publikasi'],['humas','registrasi','Konfirmasi kehadiran sekolah dan data pendaftar'],['humas','workshop','Data jumlah siswa SMK yang ikut workshop'],['humas','talkshow','Undangan dan ucapan terima kasih untuk narasumber'],['pdd','desain','Konten comingsoon, key visual, dan dekorasi Domain'],['pdd','kurasi','Link submission karya dan dokumentasi karya'],['kurasi','desain','Label karya, kode karya, dan katalog'],['kurasi','perkap','Mapping Domain dan pemasangan karya di panel'],['perkap','desain','Banner dan backdrop yang dipasang di Domain'],['perkap','keamanan','Kunci Domain dan penjagaan peralatan'],['perkap','talkshow','Sound, mikrofon, dan layar'],['perkap','workshop','Proyektor dan perangkat kerja workshop'],['registrasi','keamanan','Alur masuk pengunjung dan aturan kunjungan'],['registrasi','workshop','Daftar hadir peserta workshop'],['registrasi','talkshow','Daftar hadir peserta talkshow'],['registrasi','desain','Name tag panitia dan sertifikat peserta'],['talkshow','workshop','Jadwal 8 dan 9 Januari, pembagian ruang dan waktu']];
+var ord=['humas','pdd','desain','kurasi','perkap','keamanan','registrasi','workshop','talkshow'];
+var pc=document.createElement('style');
+pc.textContent='#peta{margin-bottom:28px}#peta .pk{font-size:14px;color:var(--muted);text-align:center;margin:0 auto 18px;max-width:62ch}#peta svg{display:block;width:100%;max-width:640px;margin:0 auto}#peta .ln{stroke:var(--rule);stroke-width:1.2}#peta .sp{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4}#peta .nd{cursor:pointer}#peta .nd circle{fill:var(--bg);stroke:var(--fg);stroke-width:1.2}#peta .nd text{font:500 11px var(--body);letter-spacing:.08em;text-transform:uppercase;fill:var(--fg);text-anchor:middle;dominant-baseline:central;pointer-events:none}#peta line.on{stroke:var(--gold);stroke-width:2.4}#peta .nd.on circle{stroke:var(--gold);stroke-width:2.4}#peta .dim{opacity:.18}#peta .mp{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:26px 40px;margin-top:30px}#peta .mp h3{font:400 20px var(--head);letter-spacing:.14em;text-transform:uppercase;margin:0 0 6px}#peta .mp ul{list-style:none;margin:0;padding:0;font-size:14px}#peta .mp li{padding:5px 0;border-top:1px solid var(--line)}#peta .mp li span{color:var(--muted)}#peta .mp section.on{outline:1px solid var(--gold);outline-offset:8px}';
+document.head.appendChild(pc);
+var NS='http://www.w3.org/2000/svg';
+function pos(id){if(id==='inti')return[320,320];var i=ord.indexOf(id),a=(-90+i*360/9)*Math.PI/180;return[320+240*Math.cos(a),320+240*Math.sin(a)]}
+function se(n,at){var e=document.createElementNS(NS,n);for(var k in at)e.setAttribute(k,at[k]);return e}
+var peta=document.createElement('div');peta.id='peta';peta.hidden=true;
+var k=document.createElement('p');k.className='pk';k.textContent='Klik satu tim untuk melihat tim mana saja yang berkaitan dengannya. Hubungan ini disusun dari isi tugas. Garis putus-putus berarti Inti mengoordinasi semua seksi.';peta.appendChild(k);
+var svg=se('svg',{viewBox:'0 0 640 640',role:'img','aria-label':'Peta hubungan antar tim panitia'});
+var lines=[];
+ord.forEach(function(id){var p=pos(id),q=pos('inti');var l=se('line',{x1:q[0],y1:q[1],x2:p[0],y2:p[1],class:'sp'});l.setAttribute('data-a','inti');l.setAttribute('data-b',id);svg.appendChild(l);lines.push(l)});
+L.forEach(function(x){var p=pos(x[0]),q=pos(x[1]);var l=se('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],class:'ln'});l.setAttribute('data-a',x[0]);l.setAttribute('data-b',x[1]);svg.appendChild(l);lines.push(l)});
+var nodes={};
+['inti'].concat(ord).forEach(function(id){var p=pos(id);var g=se('g',{class:'nd'});g.appendChild(se('circle',{cx:p[0],cy:p[1],r:id==='inti'?52:46}));var t=se('text',{x:p[0],y:p[1]});t.textContent=N[id];g.appendChild(t);g.addEventListener('click',function(){hl(cur===id?null:id)});svg.appendChild(g);nodes[id]=g});
+peta.appendChild(svg);
+var mp=document.createElement('div');mp.className='mp';var secs={};
+['inti'].concat(ord).forEach(function(id){var s=document.createElement('section');var h=document.createElement('h3');h.textContent=N[id];s.appendChild(h);var ul=document.createElement('ul');
+if(id==='inti'){var li=document.createElement('li');li.innerHTML='<b>Semua seksi</b> <span>Rapat koordinasi tiap pekan, izin Domain, dan anggaran Rp15 juta</span>';ul.appendChild(li)}else{var li0=document.createElement('li');li0.innerHTML='<b>Inti</b> <span>Koordinasi, anggaran, dan izin</span>';ul.appendChild(li0)}
+L.forEach(function(x){if(x[0]!==id&&x[1]!==id)return;var o=x[0]===id?x[1]:x[0];var li=document.createElement('li');var b=document.createElement('b');b.textContent=N[o];var sp=document.createElement('span');sp.textContent=' '+x[2];li.appendChild(b);li.appendChild(sp);ul.appendChild(li)});
+s.appendChild(ul);mp.appendChild(s);secs[id]=s});
+peta.appendChild(mp);
+var cur=null;
+function hl(id){cur=id;lines.forEach(function(l){var a=l.getAttribute('data-a'),b=l.getAttribute('data-b');var on=id&&(a===id||b===id);l.classList.toggle('on',!!on);l.classList.toggle('dim',!!id&&!on)});var rel={};if(id){rel[id]=1;lines.forEach(function(l){var a=l.getAttribute('data-a'),b=l.getAttribute('data-b');if(a===id)rel[b]=1;if(b===id)rel[a]=1})}for(var n in nodes){nodes[n].classList.toggle('on',n===id);nodes[n].classList.toggle('dim',!!id&&!rel[n])}for(var s in secs){secs[s].classList.toggle('on',s===id)}if(id&&secs[id])secs[id].scrollIntoView({behavior:'smooth',block:'nearest'})}
+var pr=document.getElementById('proposal')||document.getElementById('timeline');pr.parentNode.insertBefore(peta,pr.nextSibling);
+var tp=document.getElementById('tab-proposal')||document.getElementById('tab-timeline');
+var btn=document.createElement('button');btn.type='button';btn.id='tab-peta';btn.className=tp.className;btn.textContent='Peta tim';btn.setAttribute('aria-pressed','false');tp.insertAdjacentElement('afterend',btn);
+var tabs=['tab-daftar','tab-timeline','tab-proposal'];
+btn.addEventListener('click',function(){window.setView('timeline');var tb=document.getElementById('timeline');if(tb)tb.hidden=true;var p=document.getElementById('proposal');if(p)p.hidden=true;peta.hidden=false;tabs.forEach(function(i){var e=document.getElementById(i);if(e)e.setAttribute('aria-pressed','false')});btn.setAttribute('aria-pressed','true')});
+tabs.forEach(function(i){var e=document.getElementById(i);if(e)e.addEventListener('click',function(){peta.hidden=true;btn.setAttribute('aria-pressed','false')})});
+}catch(e){console.error('bagian5 peta',e)}
+})();
