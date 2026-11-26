@@ -280,3 +280,43 @@ btn.addEventListener('click',function(){window.setView('timeline');var tb=docume
 tabs.forEach(function(i){var e=document.getElementById(i);if(e)e.addEventListener('click',function(){peta.hidden=true;btn.setAttribute('aria-pressed','false')})});
 }catch(e){console.error('bagian5 peta',e)}
 })();
+/* Bagian 6: timeline grid per minggu */
+(function(){try{
+var zig=window.renderTimeline;var mode='grid';
+var css=document.createElement('style');
+css.textContent='.tsw{display:flex;gap:8px;justify-content:center;margin:0 0 16px}.tlg-k{font-size:13px;color:var(--muted);text-align:center;margin:0 auto 16px;max-width:70ch}.gt{overflow-x:auto;border-top:1px solid var(--rule);margin-bottom:24px}.gt-in{min-width:860px;display:grid;grid-template-columns:minmax(220px,1.6fr) 70px repeat(8,minmax(66px,1fr))}.gt .c{border-bottom:1px solid var(--line);border-left:1px solid var(--line);min-height:32px;display:flex;align-items:center}.gt .n{padding:6px 10px 6px 0;font-size:13.5px;position:sticky;left:0;background:var(--bg);z-index:1;border-left:0}.gt .n.dn{color:var(--muted);text-decoration:line-through}.gt .ph{text-align:center;font:500 11px var(--body);letter-spacing:.16em;text-transform:uppercase;padding:8px 0;color:#fff;border-left:1px solid var(--bg)}.gt .wk{justify-content:center;text-align:center;font-size:11px;color:var(--muted);padding:6px 2px;min-height:36px}.gt .wk0{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-left:0;position:sticky;left:0;background:var(--bg);z-index:1;border-left:0}.gt .wk.now{color:var(--gold);font-weight:700;box-shadow:inset 0 -2px 0 var(--gold)}.gt .nowc{background:rgba(192,138,82,.08)}.gt .dv{grid-column:1/-1;font:400 15px var(--head);letter-spacing:.14em;text-transform:uppercase;padding:18px 0 6px;border-bottom:1px solid var(--rule);position:sticky;left:0}.gt .dv small{font:400 12px var(--body);letter-spacing:.04em;text-transform:none;color:var(--muted)}.gt .bar{flex:1;height:16px;margin:0 4px;border-radius:2px}.gt .bar.dn{opacity:.35}.gt .bar.und{opacity:.45;border:1px dashed var(--fg)}.gt .bar.lt{background:var(--late)!important}';
+document.head.appendChild(css);
+var MO=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+var COL=['#6e625a','#5b8bb5','#5f9588','#b88f2e','#c06a3a','#8a7a8f','#4f7f9a','#9a8a4a','#a65f55','#6b8f5e'];
+var PH=[['Fondasi',2,'#6e625a'],['Putuskan',2,'#5b8bb5'],['Siapkan',2,'#5f9588'],['Pasang dan Acara',1,'#b88f2e'],['Penutup',1,'#c06a3a']];
+var S0=new Date('2026-11-23T00:00:00');var NW=8;
+function h(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+function wl(i){var a=new Date(S0.getTime()+i*6048e5),b=new Date(a.getTime()+6*864e5);return a.getDate()+(a.getMonth()!==b.getMonth()?' '+MO[a.getMonth()]:'')+'-'+b.getDate()+' '+MO[b.getMonth()]}
+function sw(){var d=h('div','tsw');[['grid','Grid per minggu'],['tahap','Per tahap']].forEach(function(m){var b=h('button','chip',m[1]);b.type='button';b.setAttribute('aria-pressed',String(mode===m[0]));b.addEventListener('click',function(){mode=m[0];window.renderTimeline()});d.appendChild(b)});return d}
+function grid(){
+ var t0=today();var wrap=h('div','gt');var g=h('div','gt-in');
+ var nowW=Math.floor((new Date(t0+'T00:00:00')-S0)/6048e5);
+ g.appendChild(h('div','c n',''));g.appendChild(h('div','c',''));
+ PH.forEach(function(p){var e=h('div','ph',p[0]);e.style.gridColumn='span '+p[1];e.style.background=p[2];g.appendChild(e)});
+ g.appendChild(h('div','c wk0','Tugas'));g.appendChild(h('div','c wk','Tanpa tenggat'));
+ for(var i=0;i<NW;i++)g.appendChild(h('div','c wk'+(i===nowW?' now':''),wl(i)));
+ DIVS.forEach(function(v,vi){
+  var items=tasks.filter(function(t){return t.division===v.id}).sort(function(a,b){var x=a.due||'9',y=b.due||'9';return x<y?-1:x>y?1:0});
+  var done=items.filter(function(t){return t.status==='selesai'}).length;
+  var d=h('div','dv',v.name);d.appendChild(h('small',null,'   '+done+' dari '+items.length+' selesai'));g.appendChild(d);
+  items.forEach(function(t){
+   var late=t.status!=='selesai'&&t.due&&t.due<t0;
+   g.appendChild(h('div','c n'+(t.status==='selesai'?' dn':''),t.title));
+   var idx=t.due?Math.min(NW-1,Math.max(0,Math.floor((new Date(t.due+'T00:00:00')-S0)/6048e5))):-1;
+   for(var k=-1;k<NW;k++){var c=h('div','c'+(k===nowW?' nowc':''));
+    if(k===idx){var b=h('div','bar'+(t.status==='selesai'?' dn':'')+(t.due?'':' und')+(late?' lt':''));b.style.background=COL[vi%COL.length];b.title=(t.due?fmt(t.due):'Belum ada tenggat')+' · '+(t.status==='selesai'?'selesai':t.status==='jalan'?'dikerjakan':'belum')+(late?' · terlambat':'');c.appendChild(b)}
+    g.appendChild(c)}
+  });
+ });
+ wrap.appendChild(g);return wrap}
+window.renderTimeline=function(){var box=$('#timeline');if(!box)return;
+ if(mode==='tahap'){zig();box.insertBefore(sw(),box.firstChild);return}
+ box.replaceChildren(sw(),h('p','tlg-k','Setiap batang menandai minggu tenggat tugas. Merah berarti terlambat, pudar berarti selesai, garis putus-putus berarti belum ada tenggat. Ubah tenggat di tab Daftar tugas.'),grid())};
+window.renderTimeline();
+}catch(e){console.error('bagian6 grid',e)}
+})();
