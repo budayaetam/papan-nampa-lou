@@ -197,3 +197,42 @@ document.getElementById('cd-u').textContent=t.length?('Tinggal '+d+' hari. Masih
 document.getElementById('cd-b').textContent=(tel?tel+' tugas sudah lewat tenggat. ':'')+'Pembukaan: Kamis, 7 Januari 2027.';}
 tick();setInterval(tick,1000);
 }catch(e){console.error('countdown',e)}})();
+/* Bagian 4: timeline zigzag, tengah hitung mundur, tambah dan hapus tugas, pratinjau proposal */
+(function(){try{
+var css=document.createElement('style');
+css.textContent='.cd{text-align:center}.cd .big{justify-content:center}.pvb{font:500 11px var(--body);letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--fg);background:transparent;color:var(--fg);padding:3px 10px;margin:0 8px;cursor:pointer}.pvb:hover{background:var(--fg);color:var(--bg)}.pv{margin:8px 0 18px}.pv iframe{width:100%;height:72vh;border:1px solid var(--rule);background:#fff}.pv img{max-width:100%;border:1px solid var(--rule)}.row .xx{font-size:22px;padding:0 6px;color:var(--fg)}.row .xx.arm{font-size:12px;font-weight:700;letter-spacing:.06em;white-space:nowrap;margin-left:-44px;color:var(--late,#b3261e)}';
+document.head.appendChild(css);
+window.renderTimeline=function(){
+  var box=$('#timeline'); if(!box)return; box.replaceChildren();
+  var t0=today();
+  var stageOf=function(t){if(!t.due)return 0;for(var i=0;i<STAGES.length;i++)if(t.due<=STAGES[i][1])return i;return STAGES.length-1};
+  var nowIdx=(function(){for(var i=0;i<STAGES.length;i++)if(t0<=STAGES[i][1])return i;return -1})();
+  var tl=el('div',{class:'tl'});
+  STAGES.forEach(function(s,i){
+    var items=tasks.filter(function(t){return stageOf(t)===i}).sort(function(a,b){return (a.due||'')<(b.due||'')?-1:(a.due||'')>(b.due||'')?1:0});
+    var done=items.filter(function(t){return t.status==='selesai'}).length;
+    var ul=el('ul',{},...items.map(function(t){
+      var late=t.status!=='selesai'&&t.due&&t.due<t0;
+      var dv=DIVS.find(function(v){return v.id===t.division});
+      var col=t.status==='selesai'?'var(--done)':t.status==='jalan'?'var(--run)':'var(--todo)';
+      return el('li',{class:(t.status==='selesai'?'done':'')+(late?' late':'')},el('i',{style:'background:'+col}),el('span',{},document.createTextNode(t.title+' '),el('small',{text:(dv?dv.name:'')+(t.due?' · '+fmt(t.due):'')+(late?' · terlambat':'')})));
+    }));
+    tl.append(el('div',{class:'it '+(i%2===0?'r':'l')+(i===nowIdx?' now':'')},el('div',{class:'when',text:s[2].toUpperCase()}),el('div',{class:'body'},el('p',{class:'sub',text:'Tahap '+(i+1)+(i===nowIdx?' · sedang berjalan':'')}),el('h3',{text:s[3]}),el('p',{class:'lead',text:s[4]}),el('p',{class:'prog',text:items.length?done+' dari '+items.length+' tugas selesai':'Belum ada tugas bertenggat di tahap ini.'}),ul)));
+  });
+  box.append(el('p',{class:'tlkey',text:'Tugas masuk ke tahap sesuai tenggatnya. Titik hijau selesai, emas sedang dikerjakan, abu-abu belum. Tahap ikut berubah saat panitia mengubah tenggat.'}),tl);
+};
+window.renderTimeline();
+}catch(e){console.error('bagian4 timeline',e)}
+try{
+var sb4=window.supabase.createClient(SB_URL,SB_KEY);var tm=null;
+var refresh=function(){clearTimeout(tm);tm=setTimeout(function(){sb4.from('tasks').select('*').then(function(r){if(r.error||!r.data)return;tasks=r.data;window.render()})},350)};
+var c0=db.collection,d0=db.doc;
+db.collection=function(){var c=c0.apply(db,arguments);var a=c.add;if(a)c.add=function(o){return a(o).then(function(){toast('Tugas ditambahkan.');refresh()},function(e){toast('Gagal menambah tugas.');throw e})};return c};
+db.doc=function(){var d=d0.apply(db,arguments);var u=d.update,x=d.delete;d.update=function(q){return u(q).then(refresh)};d.delete=function(){return x().then(function(){toast('Tugas dihapus.');refresh()},function(e){toast('Gagal menghapus tugas.');throw e})};return d};
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.row .xx');if(!b)return;if(b.getAttribute('data-arm')!=='1'){e.stopImmediatePropagation();e.preventDefault();b.setAttribute('data-arm','1');b.classList.add('arm');b.textContent='Hapus?';setTimeout(function(){b.removeAttribute('data-arm');b.classList.remove('arm');b.textContent='×'},3000)}},true);
+}catch(e){console.error('bagian4 tugas',e)}
+try{
+var pvAll=function(){var pl=document.getElementById('pl');if(!pl)return;pl.querySelectorAll('.pr').forEach(function(pr){if(pr.getAttribute('data-pv'))return;pr.setAttribute('data-pv','1');var a=pr.querySelector('a');if(!a)return;var url=a.href;var ext=(url.split('?')[0].split('.').pop()||'').toLowerCase();var kind=ext==='pdf'?'pdf':/^(png|jpe?g)$/.test(ext)?'img':/^(docx?|pptx?|xlsx?)$/.test(ext)?'off':'';if(!kind)return;var b=document.createElement('button');b.type='button';b.className='pvb';b.textContent='Pratinjau';a.insertAdjacentElement('afterend',b);b.addEventListener('click',function(){var nx=pr.nextElementSibling;if(nx&&nx.classList.contains('pv')){nx.remove();b.textContent='Pratinjau';return}var box=document.createElement('div');box.className='pv';if(kind==='img'){var im=document.createElement('img');im.src=url;im.alt='Pratinjau';box.appendChild(im)}else{var fr=document.createElement('iframe');fr.src=kind==='pdf'?url:'https://docs.google.com/viewer?embedded=true&url='+encodeURIComponent(url);fr.title='Pratinjau berkas';box.appendChild(fr)}pr.insertAdjacentElement('afterend',box);b.textContent='Tutup'})})};
+var pp=document.getElementById('proposal');if(pp){new MutationObserver(pvAll).observe(pp,{childList:true,subtree:true});pvAll()}
+}catch(e){console.error('bagian4 proposal',e)}
+})();
